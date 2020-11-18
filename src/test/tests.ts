@@ -1169,13 +1169,13 @@ describe('Client', function () {
     let wasKAReceived = false;
 
     const subscriptionsClient = new SubscriptionClient(`ws://localhost:${KEEP_ALIVE_TEST_PORT}/`, { timeout: 600 });
-    const originalOnMessage = subscriptionsClient.client.onmessage;
-    subscriptionsClient.client.onmessage = (dataReceived: any) => {
-      let receivedDataParsed = JSON.parse(dataReceived.data);
+    const originalProcessReceivedData = subscriptionsClient.processReceivedData;
+    subscriptionsClient.processReceivedData = (receivedData: any) => {
+      let receivedDataParsed = JSON.parse(receivedData);
       if (receivedDataParsed.type === MessageTypes.GQL_CONNECTION_KEEP_ALIVE) {
         if (!wasKAReceived) {
           wasKAReceived = true;
-          originalOnMessage(dataReceived);
+          originalProcessReceivedData.call(subscriptionsClient, receivedData);
         }
       }
     };
@@ -1192,12 +1192,12 @@ describe('Client', function () {
 
     const subscriptionsClient = new SubscriptionClient(`ws://localhost:${KEEP_ALIVE_TEST_PORT}/`, { timeout: 600 });
     const checkConnectionSpy = sinon.spy(subscriptionsClient as any, 'checkConnection');
-    const originalOnMessage = subscriptionsClient.client.onmessage;
-    subscriptionsClient.client.onmessage = (dataReceived: any) => {
-      let receivedDataParsed = JSON.parse(dataReceived.data);
+    const originalProcessReceivedData = subscriptionsClient.processReceivedData;
+    subscriptionsClient.processReceivedData = (receivedData: any) => {
+      let receivedDataParsed = JSON.parse(receivedData);
       if (receivedDataParsed.type === MessageTypes.GQL_CONNECTION_KEEP_ALIVE) {
         ++receivedKeepAlive;
-        originalOnMessage(dataReceived);
+        originalProcessReceivedData.call(subscriptionsClient, receivedData);
       }
     };
 
@@ -1210,27 +1210,23 @@ describe('Client', function () {
 
   it('should take care of invalid message received', (done) => {
     const subscriptionsClient = new SubscriptionClient(`ws://localhost:${RAW_TEST_PORT}/`);
-    const originalOnMessage = subscriptionsClient.client.onmessage;
-    const dataToSend = {
-      data: JSON.stringify({ type: 'invalid' }),
-    };
+    const originalProcessReceivedData = subscriptionsClient.processReceivedData;
+    const receivedData = JSON.stringify({ type: 'invalid' });
 
     expect(() => {
-      originalOnMessage.call(subscriptionsClient, dataToSend)();
+      originalProcessReceivedData.call(subscriptionsClient, receivedData);
     }).to.throw('Invalid message type!');
     done();
   });
 
-  it('should throw if received data is not JSON-parseable', (done) => {
+  it('should throw if received data is not parseable', (done) => {
     const subscriptionsClient = new SubscriptionClient(`ws://localhost:${RAW_TEST_PORT}/`);
-    const originalOnMessage = subscriptionsClient.client.onmessage;
-    const dataToSend = {
-      data: 'invalid',
-    };
+    const originalProcessReceivedData = subscriptionsClient.processReceivedData;
+    const receivedData = 'invalid';
 
     expect(() => {
-      originalOnMessage.call(subscriptionsClient, dataToSend)();
-    }).to.throw('Message must be JSON-parseable. Got: invalid');
+      originalProcessReceivedData.call(subscriptionsClient, receivedData);
+    }).to.throw('Message must be parseable. Got: invalid');
     done();
   });
 
@@ -1272,13 +1268,11 @@ describe('Client', function () {
       },
     };
 
-    const originalOnMessage = subscriptionsClient.client.onmessage;
-    const dataToSend = {
-      data: JSON.stringify({ id: 1, type: MessageTypes.GQL_COMPLETE }),
-    };
+    const originalProcessReceivedData = subscriptionsClient.processReceivedData;
+    const receivedData = JSON.stringify({ id: 1, type: MessageTypes.GQL_COMPLETE });
 
     expect(subscriptionsClient.operations).to.have.property('1');
-    originalOnMessage(dataToSend);
+    originalProcessReceivedData.call(subscriptionsClient, receivedData);
     expect(subscriptionsClient.operations).to.not.have.property('1');
     done();
   });
@@ -1304,11 +1298,11 @@ describe('Client', function () {
       });
     });
 
-    const originalOnMessage = subscriptionsClient.client.onmessage;
-    subscriptionsClient.client.onmessage = (dataReceived: any) => {
-      let receivedDataParsed = JSON.parse(dataReceived.data);
+    const originalProcessReceivedData = subscriptionsClient.processReceivedData;
+    subscriptionsClient.processReceivedData = (receivedData: any) => {
+      let receivedDataParsed = JSON.parse(receivedData);
       if (receivedDataParsed.type === MessageTypes.GQL_CONNECTION_ACK) {
-        originalOnMessage(dataReceived);
+        originalProcessReceivedData.call(subscriptionsClient, receivedData);
         subscriptionsClient.close();
       }
     };
@@ -1342,12 +1336,13 @@ describe('Client', function () {
       });
     });
 
-    const originalOnMessage = subscriptionsClient.client.onmessage;
-    subscriptionsClient.client.onmessage = (dataReceived: any) => {
-      let receivedDataParsed = JSON.parse(dataReceived.data);
+    const originalProcessReceivedData = subscriptionsClient.processReceivedData;
+    subscriptionsClient.processReceivedData = (dataReceived: any) => {
+      let receivedDataParsed = JSON.parse(dataReceived);
       if (receivedDataParsed.type === MessageTypes.GQL_CONNECTION_ACK) {
-        originalOnMessage(dataReceived);
+        originalProcessReceivedData.call(subscriptionsClient, dataReceived);
         subscriptionsClient.close(false);
+        subscriptionsClient.processReceivedData = originalProcessReceivedData;
       }
     };
 
@@ -1771,15 +1766,15 @@ describe('Server', function () {
       connectionCallback: connectionCallbackSpy,
     });
 
-    const originalOnMessage = subscriptionsClient.client.onmessage;
-    subscriptionsClient.client.onmessage = (dataReceived: any) => {
-      let messageData = JSON.parse(dataReceived.data);
+    const originalProcessReceivedData = subscriptionsClient.processReceivedData;
+    subscriptionsClient.processReceivedData = (receivedData: any) => {
+      let messageData = JSON.parse(receivedData);
       // Reformat message to avoid unknown message type
       if (messageData.type === MessageTypes.INIT_FAIL) {
         messageData.type = MessageTypes.GQL_CONNECTION_ERROR;
       }
-      dataReceived.data = JSON.stringify(messageData);
-      originalOnMessage(dataReceived);
+      receivedData = JSON.stringify(messageData);
+      originalProcessReceivedData.call(subscriptionsClient, receivedData);
     };
 
     setTimeout(() => {
@@ -1990,8 +1985,8 @@ describe('Server', function () {
     const client1 = new SubscriptionClient(`ws://localhost:${TEST_PORT}/`);
 
     setTimeout(function () {
-      client1.client.onmessage = (message: any) => {
-        let messageData = JSON.parse(message.data);
+      client1.processReceivedData = (receivedData: any) => {
+        let messageData = JSON.parse(receivedData);
 
         assert.isTrue(
           messageData.type === MessageTypes.GQL_DATA
@@ -2152,8 +2147,8 @@ describe('Server', function () {
       client4.close();
       done();
     }, 150);
-    client4.client.onmessage = (message: any) => {
-      if (JSON.parse(message.data).type === MessageTypes.GQL_DATA) {
+    client4.processReceivedData = (receivedData: any) => {
+      if (JSON.parse(receivedData).type === MessageTypes.GQL_DATA) {
         assert(false);
       }
     };

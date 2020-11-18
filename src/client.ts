@@ -74,6 +74,9 @@ export class SubscriptionClient {
   public client: any;
   public operations: Operations;
   private url: string;
+  private dataReceiver: Promise<void>;
+  private dataLoadImpl: Function;
+  private dataDumpImpl: Function;
   private nextOperationId: number;
   private connectionParams: Function;
   private minWsTimeout: number;
@@ -104,6 +107,8 @@ export class SubscriptionClient {
     options?: ClientOptions,
     webSocketImpl?: any,
     webSocketProtocols?: string | string[],
+    dataLoadImpl?: any,
+    dataDumpImpl?: any,
   ) {
     const {
       connectionCallback = undefined,
@@ -123,8 +128,11 @@ export class SubscriptionClient {
     }
 
     this.wsProtocols = webSocketProtocols || GRAPHQL_WS;
+    this.dataLoadImpl = dataLoadImpl || JSON.parse;
+    this.dataDumpImpl = dataDumpImpl || JSON.stringify;
     this.connectionCallback = connectionCallback;
     this.url = url;
+    this.dataReceiver = new Promise((resolve) => resolve());
     this.operations = {};
     this.nextOperationId = 0;
     this.minWsTimeout = minTimeout;
@@ -306,6 +314,83 @@ export class SubscriptionClient {
     return this;
   }
 
+  public processReceivedData(receivedData: any) {
+    let parsedMessage: any;
+    let opId: string;
+
+    try {
+      parsedMessage = this.dataLoadImpl(receivedData);
+      opId = parsedMessage.id;
+    } catch (e) {
+      throw new Error(`Message must be parseable. Got: ${receivedData} ${e}`);
+    }
+
+    if (
+      [ MessageTypes.GQL_DATA,
+        MessageTypes.GQL_COMPLETE,
+        MessageTypes.GQL_ERROR,
+      ].indexOf(parsedMessage.type) !== -1 && !this.operations[opId]
+    ) {
+      this.unsubscribe(opId);
+
+      return;
+    }
+
+    switch (parsedMessage.type) {
+      case MessageTypes.GQL_CONNECTION_ERROR:
+        if (this.connectionCallback) {
+          this.connectionCallback(parsedMessage.payload);
+        }
+        break;
+
+      case MessageTypes.GQL_CONNECTION_ACK:
+        this.eventEmitter.emit(this.reconnecting ? 'reconnected' : 'connected', parsedMessage.payload);
+        this.reconnecting = false;
+        this.backoff.reset();
+        this.maxConnectTimeGenerator.reset();
+
+        if (this.connectionCallback) {
+          this.connectionCallback();
+        }
+        break;
+
+      case MessageTypes.GQL_COMPLETE:
+        const handler = this.operations[opId].handler;
+        delete this.operations[opId];
+        handler.call(this, null, null);
+        break;
+
+      case MessageTypes.GQL_ERROR:
+        this.operations[opId].handler(this.formatErrors(parsedMessage.payload), null);
+        delete this.operations[opId];
+        break;
+
+      case MessageTypes.GQL_DATA:
+        const parsedPayload = !parsedMessage.payload.errors ?
+          parsedMessage.payload : {...parsedMessage.payload, errors: this.formatErrors(parsedMessage.payload.errors)};
+        this.operations[opId].handler(null, parsedPayload);
+        break;
+
+      case MessageTypes.GQL_CONNECTION_KEEP_ALIVE:
+        const firstKA = typeof this.wasKeepAliveReceived === 'undefined';
+        this.wasKeepAliveReceived = true;
+
+        if (firstKA) {
+          this.checkConnection();
+        }
+
+        if (this.checkConnectionIntervalId) {
+          clearInterval(this.checkConnectionIntervalId);
+          this.checkConnection();
+        }
+        this.checkConnectionIntervalId = setInterval(this.checkConnection.bind(this), this.wsTimeout);
+        break;
+
+      default:
+        throw new Error('Invalid message type!');
+    }
+  }
+
   private getConnectionParams(connectionParams: ConnectionParamsOptions): Function {
     return (): Promise<ConnectionParams> => new Promise((resolve, reject) => {
       if (typeof connectionParams === 'function') {
@@ -476,11 +561,11 @@ export class SubscriptionClient {
   private sendMessageRaw(message: Object) {
     switch (this.status) {
       case this.wsImpl.OPEN:
-        let serializedMessage: string = JSON.stringify(message);
+        let serializedMessage: string | Uint8Array = this.dataDumpImpl(message);
         try {
-          JSON.parse(serializedMessage);
+          this.dataLoadImpl(serializedMessage);
         } catch (e) {
-          this.eventEmitter.emit('error', new Error(`Message must be JSON-serializable. Got: ${message}`));
+          this.eventEmitter.emit('error', new Error(`Message must be serializable. Got: ${message}`));
         }
 
         this.client.send(serializedMessage);
@@ -590,85 +675,24 @@ export class SubscriptionClient {
     };
 
     this.client.onmessage = ({ data }: {data: any}) => {
-      this.processReceivedData(data);
+      // The message data can be either a string (text transport) or a Blob (binary transport),
+      // To retrieve the binary data as an *array* we must use async api calls while making sure to
+      // keep the order of messages for processing. The order is kept by chaining each incoming
+      // message after the one before it. To support both binary and text messages altenately we
+      // append the text processing to the chain as well.
+      if (typeof data === 'string') {
+        // Message arrived on text transport.
+        this.dataReceiver = this.dataReceiver
+          .catch(() => null)  // ignore error of previous message processing if any; it is irrelevant now
+          .then(() => this.processReceivedData(data));
+      } else {
+        // Message arrived on binary transport; data is a Blob.
+        this.dataReceiver = this.dataReceiver
+          .catch(() => null)  // ignore error of previous message processing if any; it is irrelevant now
+          .then(() => data.arrayBuffer())  // no error handler, socket read will likely trigger disconnect
+          .then((buffer: ArrayBuffer) => this.processReceivedData(new Uint8Array(buffer)));
+      }
     };
-  }
-
-  private processReceivedData(receivedData: any) {
-    let parsedMessage: any;
-    let opId: string;
-
-    try {
-      parsedMessage = JSON.parse(receivedData);
-      opId = parsedMessage.id;
-    } catch (e) {
-      throw new Error(`Message must be JSON-parseable. Got: ${receivedData}`);
-    }
-
-    if (
-      [ MessageTypes.GQL_DATA,
-        MessageTypes.GQL_COMPLETE,
-        MessageTypes.GQL_ERROR,
-      ].indexOf(parsedMessage.type) !== -1 && !this.operations[opId]
-    ) {
-      this.unsubscribe(opId);
-
-      return;
-    }
-
-    switch (parsedMessage.type) {
-      case MessageTypes.GQL_CONNECTION_ERROR:
-        if (this.connectionCallback) {
-          this.connectionCallback(parsedMessage.payload);
-        }
-        break;
-
-      case MessageTypes.GQL_CONNECTION_ACK:
-        this.eventEmitter.emit(this.reconnecting ? 'reconnected' : 'connected', parsedMessage.payload);
-        this.reconnecting = false;
-        this.backoff.reset();
-        this.maxConnectTimeGenerator.reset();
-
-        if (this.connectionCallback) {
-          this.connectionCallback();
-        }
-        break;
-
-      case MessageTypes.GQL_COMPLETE:
-        const handler = this.operations[opId].handler;
-        delete this.operations[opId];
-        handler.call(this, null, null);
-        break;
-
-      case MessageTypes.GQL_ERROR:
-        this.operations[opId].handler(this.formatErrors(parsedMessage.payload), null);
-        delete this.operations[opId];
-        break;
-
-      case MessageTypes.GQL_DATA:
-        const parsedPayload = !parsedMessage.payload.errors ?
-          parsedMessage.payload : {...parsedMessage.payload, errors: this.formatErrors(parsedMessage.payload.errors)};
-        this.operations[opId].handler(null, parsedPayload);
-        break;
-
-      case MessageTypes.GQL_CONNECTION_KEEP_ALIVE:
-        const firstKA = typeof this.wasKeepAliveReceived === 'undefined';
-        this.wasKeepAliveReceived = true;
-
-        if (firstKA) {
-          this.checkConnection();
-        }
-
-        if (this.checkConnectionIntervalId) {
-          clearInterval(this.checkConnectionIntervalId);
-          this.checkConnection();
-        }
-        this.checkConnectionIntervalId = setInterval(this.checkConnection.bind(this), this.wsTimeout);
-        break;
-
-      default:
-        throw new Error('Invalid message type!');
-    }
   }
 
   private unsubscribe(opId: string) {
