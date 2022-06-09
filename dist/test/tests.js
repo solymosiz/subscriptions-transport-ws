@@ -921,7 +921,7 @@ describe('Client', function () {
         });
     });
     it('should emit event when an websocket error occurs', function (done) {
-        var client = new client_1.SubscriptionClient("ws://localhost:" + ERROR_TEST_PORT + "/");
+        var client = new client_1.SubscriptionClient("ws://127.0.0.1:" + ERROR_TEST_PORT + "/");
         client.request({
             query: "subscription useInfo{\n        invalid\n      }",
             variables: {},
@@ -940,7 +940,7 @@ describe('Client', function () {
             connection.close();
         });
         var errorCount = 0;
-        var subscriptionsClient = new client_1.SubscriptionClient("ws://localhost:" + RAW_TEST_PORT + "/", {
+        var subscriptionsClient = new client_1.SubscriptionClient("ws://127.0.0.1:" + RAW_TEST_PORT + "/", {
             timeout: 500,
             reconnect: true,
             reconnectionAttempts: 2,

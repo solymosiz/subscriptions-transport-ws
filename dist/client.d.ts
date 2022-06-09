@@ -91,6 +91,7 @@ export declare class SubscriptionClient {
     applyMiddlewares(options: OperationOptions): Promise<OperationOptions>;
     use(middlewares: Middleware[]): SubscriptionClient;
     processReceivedData(receivedData: any): void;
+    private handleKeepalive;
     private getConnectionParams;
     private executeOperation;
     private getObserver;

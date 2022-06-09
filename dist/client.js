@@ -263,6 +263,7 @@ var SubscriptionClient = (function () {
             this.unsubscribe(opId);
             return;
         }
+        this.handleKeepalive();
         switch (parsedMessage.type) {
             case message_types_1.default.GQL_CONNECTION_ERROR:
                 if (this.connectionCallback) {
@@ -293,20 +294,23 @@ var SubscriptionClient = (function () {
                 this.operations[opId].handler(null, parsedPayload);
                 break;
             case message_types_1.default.GQL_CONNECTION_KEEP_ALIVE:
-                var firstKA = typeof this.wasKeepAliveReceived === 'undefined';
-                this.wasKeepAliveReceived = true;
-                if (firstKA) {
-                    this.checkConnection();
-                }
-                if (this.checkConnectionIntervalId) {
-                    clearInterval(this.checkConnectionIntervalId);
-                    this.checkConnection();
-                }
-                this.checkConnectionIntervalId = setInterval(this.checkConnection.bind(this), this.wsTimeout);
                 break;
             default:
                 throw new Error('Invalid message type!');
         }
+    };
+    SubscriptionClient.prototype.handleKeepalive = function () {
+        var firstKA = typeof this.wasKeepAliveReceived === 'undefined';
+        this.wasKeepAliveReceived = true;
+        if (firstKA) {
+            this.checkConnection();
+        }
+        if (this.checkConnectionIntervalId) {
+            clearInterval(this.checkConnectionIntervalId);
+            this.checkConnection();
+        }
+        this.checkConnectionIntervalId = setInterval(this.checkConnection.bind(this), this.wsTimeout);
+        return firstKA;
     };
     SubscriptionClient.prototype.getConnectionParams = function (connectionParams) {
         return function () { return new Promise(function (resolve, reject) {
