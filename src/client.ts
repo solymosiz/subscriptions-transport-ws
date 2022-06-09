@@ -336,6 +336,9 @@ export class SubscriptionClient {
       return;
     }
 
+    // Any kind of deserialized message that arrives from the server implies that the socket connection is alive still.
+    this.handleKeepalive();
+
     switch (parsedMessage.type) {
       case MessageTypes.GQL_CONNECTION_ERROR:
         if (this.connectionCallback) {
@@ -372,23 +375,27 @@ export class SubscriptionClient {
         break;
 
       case MessageTypes.GQL_CONNECTION_KEEP_ALIVE:
-        const firstKA = typeof this.wasKeepAliveReceived === 'undefined';
-        this.wasKeepAliveReceived = true;
-
-        if (firstKA) {
-          this.checkConnection();
-        }
-
-        if (this.checkConnectionIntervalId) {
-          clearInterval(this.checkConnectionIntervalId);
-          this.checkConnection();
-        }
-        this.checkConnectionIntervalId = setInterval(this.checkConnection.bind(this), this.wsTimeout);
-        break;
+        break;  // handled for all well deserialized messages
 
       default:
         throw new Error('Invalid message type!');
     }
+  }
+
+  private handleKeepalive(): boolean {
+    const firstKA = typeof this.wasKeepAliveReceived === 'undefined';
+    this.wasKeepAliveReceived = true;
+
+    if (firstKA) {
+      this.checkConnection();
+    }
+
+    if (this.checkConnectionIntervalId) {
+      clearInterval(this.checkConnectionIntervalId);
+      this.checkConnection();
+    }
+    this.checkConnectionIntervalId = setInterval(this.checkConnection.bind(this), this.wsTimeout);
+    return firstKA;
   }
 
   private getConnectionParams(connectionParams: ConnectionParamsOptions): Function {
