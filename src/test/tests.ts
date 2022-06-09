@@ -1072,7 +1072,7 @@ describe('Client', function () {
   });
 
   it('should emit event when an websocket error occurs', function (done) {
-    const client = new SubscriptionClient(`ws://localhost:${ERROR_TEST_PORT}/`);
+    const client = new SubscriptionClient(`ws://127.0.0.1:${ERROR_TEST_PORT}/`);
 
     client.request({
       query: `subscription useInfo{
@@ -1096,7 +1096,7 @@ describe('Client', function () {
       connection.close();
     });
     let errorCount = 0;
-    const subscriptionsClient = new SubscriptionClient(`ws://localhost:${RAW_TEST_PORT}/`, {
+    const subscriptionsClient = new SubscriptionClient(`ws://127.0.0.1:${RAW_TEST_PORT}/`, {
       timeout: 500,
       reconnect: true,
       reconnectionAttempts: 2,
