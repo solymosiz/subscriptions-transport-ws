@@ -44,6 +44,7 @@ export interface ClientOptions {
     lazy?: boolean;
     inactivityTimeout?: number;
     wsOptionArguments?: any[];
+    serverSendsKeepalive?: boolean;
 }
 export declare class SubscriptionClient {
     client: any;
@@ -70,6 +71,7 @@ export declare class SubscriptionClient {
     private wsImpl;
     private wsProtocols;
     private wasKeepAliveReceived;
+    private serverSendsKeepalive;
     private tryReconnectTimeoutId;
     private checkConnectionIntervalId;
     private maxConnectTimeoutId;

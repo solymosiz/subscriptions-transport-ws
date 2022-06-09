@@ -69,7 +69,7 @@ var defaults_1 = require("./defaults");
 var message_types_1 = require("./message-types");
 var SubscriptionClient = (function () {
     function SubscriptionClient(url, options, webSocketImpl, webSocketProtocols, dataLoadImpl, dataDumpImpl) {
-        var _a = (options || {}), _b = _a.connectionCallback, connectionCallback = _b === void 0 ? undefined : _b, _c = _a.connectionParams, connectionParams = _c === void 0 ? {} : _c, _d = _a.minTimeout, minTimeout = _d === void 0 ? defaults_1.MIN_WS_TIMEOUT : _d, _e = _a.timeout, timeout = _e === void 0 ? defaults_1.WS_TIMEOUT : _e, _f = _a.reconnect, reconnect = _f === void 0 ? false : _f, _g = _a.reconnectionAttempts, reconnectionAttempts = _g === void 0 ? Infinity : _g, _h = _a.lazy, lazy = _h === void 0 ? false : _h, _j = _a.inactivityTimeout, inactivityTimeout = _j === void 0 ? 0 : _j, _k = _a.wsOptionArguments, wsOptionArguments = _k === void 0 ? [] : _k;
+        var _a = (options || {}), _b = _a.connectionCallback, connectionCallback = _b === void 0 ? undefined : _b, _c = _a.connectionParams, connectionParams = _c === void 0 ? {} : _c, _d = _a.minTimeout, minTimeout = _d === void 0 ? defaults_1.MIN_WS_TIMEOUT : _d, _e = _a.timeout, timeout = _e === void 0 ? defaults_1.WS_TIMEOUT : _e, _f = _a.reconnect, reconnect = _f === void 0 ? false : _f, _g = _a.reconnectionAttempts, reconnectionAttempts = _g === void 0 ? Infinity : _g, _h = _a.lazy, lazy = _h === void 0 ? false : _h, _j = _a.inactivityTimeout, inactivityTimeout = _j === void 0 ? 0 : _j, _k = _a.wsOptionArguments, wsOptionArguments = _k === void 0 ? [] : _k, _l = _a.serverSendsKeepalive, serverSendsKeepalive = _l === void 0 ? false : _l;
         this.wsImpl = webSocketImpl || NativeWebSocket;
         if (!this.wsImpl) {
             throw new Error('Unable to find native implementation, or alternative implementation for WebSocket!');
@@ -98,6 +98,7 @@ var SubscriptionClient = (function () {
         this.maxConnectTimeGenerator = this.createMaxConnectTimeGenerator();
         this.connectionParams = this.getConnectionParams(connectionParams);
         this.wsOptionArguments = wsOptionArguments;
+        this.serverSendsKeepalive = serverSendsKeepalive;
         if (!this.lazy) {
             this.connect();
         }
@@ -263,7 +264,9 @@ var SubscriptionClient = (function () {
             this.unsubscribe(opId);
             return;
         }
-        this.handleKeepalive();
+        if (this.serverSendsKeepalive) {
+            this.handleKeepalive();
+        }
         switch (parsedMessage.type) {
             case message_types_1.default.GQL_CONNECTION_ERROR:
                 if (this.connectionCallback) {
@@ -294,6 +297,9 @@ var SubscriptionClient = (function () {
                 this.operations[opId].handler(null, parsedPayload);
                 break;
             case message_types_1.default.GQL_CONNECTION_KEEP_ALIVE:
+                if (!this.serverSendsKeepalive) {
+                    this.handleKeepalive();
+                }
                 break;
             default:
                 throw new Error('Invalid message type!');

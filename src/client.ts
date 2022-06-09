@@ -68,6 +68,7 @@ export interface ClientOptions {
   lazy?: boolean;
   inactivityTimeout?: number;
   wsOptionArguments?: any[];
+  serverSendsKeepalive?: boolean;
 }
 
 export class SubscriptionClient {
@@ -95,6 +96,7 @@ export class SubscriptionClient {
   private wsImpl: any;
   private wsProtocols: string | string[];
   private wasKeepAliveReceived: boolean;
+  private serverSendsKeepalive: boolean;
   private tryReconnectTimeoutId: any;
   private checkConnectionIntervalId: any;
   private maxConnectTimeoutId: any;
@@ -120,6 +122,7 @@ export class SubscriptionClient {
       lazy = false,
       inactivityTimeout = 0,
       wsOptionArguments = [],
+      serverSendsKeepalive = false,
     } = (options || {});
 
     this.wsImpl = webSocketImpl || NativeWebSocket;
@@ -151,6 +154,7 @@ export class SubscriptionClient {
     this.maxConnectTimeGenerator = this.createMaxConnectTimeGenerator();
     this.connectionParams = this.getConnectionParams(connectionParams);
     this.wsOptionArguments = wsOptionArguments;
+    this.serverSendsKeepalive = serverSendsKeepalive;
 
     if (!this.lazy) {
       this.connect();
@@ -336,8 +340,10 @@ export class SubscriptionClient {
       return;
     }
 
-    // Any kind of deserialized message that arrives from the server implies that the socket connection is alive still.
-    this.handleKeepalive();
+    if (this.serverSendsKeepalive) {
+      // Any kind of deserialized message that arrives from the server implies that the socket connection is alive still.
+      this.handleKeepalive();
+    }
 
     switch (parsedMessage.type) {
       case MessageTypes.GQL_CONNECTION_ERROR:
@@ -375,7 +381,10 @@ export class SubscriptionClient {
         break;
 
       case MessageTypes.GQL_CONNECTION_KEEP_ALIVE:
-        break;  // handled for all well deserialized messages
+        if (!this.serverSendsKeepalive) {
+          this.handleKeepalive();
+        }
+        break;
 
       default:
         throw new Error('Invalid message type!');
