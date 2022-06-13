@@ -187,14 +187,17 @@ var SubscriptionClient = (function () {
     };
     SubscriptionClient.prototype.on = function (eventName, callback, context) {
         var handler = this.eventEmitter.on(eventName, callback, context);
+        console.log("on asdasd");
         return function () {
             handler.off(eventName, callback, context);
         };
     };
     SubscriptionClient.prototype.onConnected = function (callback, context) {
+        console.log("on asdasd");
         return this.on("connected", callback, context);
     };
     SubscriptionClient.prototype.onConnecting = function (callback, context) {
+        console.log("on asdasd");
         return this.on("connecting", callback, context);
     };
     SubscriptionClient.prototype.onDisconnected = function (callback, context) {

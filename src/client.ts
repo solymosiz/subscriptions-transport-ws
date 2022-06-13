@@ -267,6 +267,7 @@ export class SubscriptionClient {
 
   public on(eventName: string, callback: ListenerFn, context?: any): Function {
     const handler = this.eventEmitter.on(eventName, callback, context);
+    console.log("on asdasd");
 
     return () => {
       handler.off(eventName, callback, context);
@@ -274,10 +275,12 @@ export class SubscriptionClient {
   }
 
   public onConnected(callback: ListenerFn, context?: any): Function {
+    console.log("on asdasd");
     return this.on("connected", callback, context);
   }
 
   public onConnecting(callback: ListenerFn, context?: any): Function {
+    console.log("on asdasd");
     return this.on("connecting", callback, context);
   }
 
