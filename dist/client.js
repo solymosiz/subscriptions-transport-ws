@@ -182,8 +182,10 @@ var SubscriptionClient = (function () {
             _a;
     };
     SubscriptionClient.prototype.on = function (eventName, callback, context) {
+        console.log("asdasdasdasd")
         var handler = this.eventEmitter.on(eventName, callback, context);
         return function () {
+            console.log("asdasdasdasd")
             handler.off(eventName, callback, context);
         };
     };
@@ -191,6 +193,7 @@ var SubscriptionClient = (function () {
         return this.on('connected', callback, context);
     };
     SubscriptionClient.prototype.onConnecting = function (callback, context) {
+        console.log("asdasdasdasd")
         return this.on('connecting', callback, context);
     };
     SubscriptionClient.prototype.onDisconnected = function (callback, context) {
