@@ -124,6 +124,7 @@ export class SubscriptionClient {
     dataLoadImpl?: any,
     dataDumpImpl?: any
   ) {
+    console.log("ts asdasdasd");
     const {
       connectionCallback = undefined,
       connectionParams = {},
