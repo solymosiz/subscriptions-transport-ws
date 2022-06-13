@@ -1,6 +1,6 @@
-import { ListenerFn } from 'eventemitter3';
-import { ExecutionResult } from 'graphql/execution/execute';
-import { DocumentNode } from 'graphql/language/ast';
+import { ListenerFn } from "eventemitter3";
+import { ExecutionResult } from "graphql/execution/execute";
+import { DocumentNode } from "graphql/language/ast";
 export interface Observer<T> {
     next?: (value: T) => void;
     error?: (error: Error) => void;

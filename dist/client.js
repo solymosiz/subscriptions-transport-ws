@@ -55,7 +55,11 @@ var __spreadArrays = (this && this.__spreadArrays) || function () {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SubscriptionClient = void 0;
-var _global = typeof global !== 'undefined' ? global : (typeof window !== 'undefined' ? window : {});
+var _global = typeof global !== "undefined"
+    ? global
+    : typeof window !== "undefined"
+        ? window
+        : {};
 var NativeWebSocket = _global.WebSocket || _global.MozWebSocket;
 var Backoff = require("backo2");
 var eventemitter3_1 = require("eventemitter3");
@@ -69,11 +73,11 @@ var defaults_1 = require("./defaults");
 var message_types_1 = require("./message-types");
 var SubscriptionClient = (function () {
     function SubscriptionClient(url, options, webSocketImpl, webSocketProtocols, dataLoadImpl, dataDumpImpl) {
-        console.log("asdasdasdasd")
-        var _a = (options || {}), _b = _a.connectionCallback, connectionCallback = _b === void 0 ? undefined : _b, _c = _a.connectionParams, connectionParams = _c === void 0 ? {} : _c, _d = _a.minTimeout, minTimeout = _d === void 0 ? defaults_1.MIN_WS_TIMEOUT : _d, _e = _a.timeout, timeout = _e === void 0 ? defaults_1.WS_TIMEOUT : _e, _f = _a.reconnect, reconnect = _f === void 0 ? false : _f, _g = _a.reconnectionAttempts, reconnectionAttempts = _g === void 0 ? Infinity : _g, _h = _a.lazy, lazy = _h === void 0 ? false : _h, _j = _a.inactivityTimeout, inactivityTimeout = _j === void 0 ? 0 : _j, _k = _a.wsOptionArguments, wsOptionArguments = _k === void 0 ? [] : _k, _l = _a.serverSendsKeepalive, serverSendsKeepalive = _l === void 0 ? false : _l;
+        console.log("ts asdasdasd");
+        var _a = options || {}, _b = _a.connectionCallback, connectionCallback = _b === void 0 ? undefined : _b, _c = _a.connectionParams, connectionParams = _c === void 0 ? {} : _c, _d = _a.minTimeout, minTimeout = _d === void 0 ? defaults_1.MIN_WS_TIMEOUT : _d, _e = _a.timeout, timeout = _e === void 0 ? defaults_1.WS_TIMEOUT : _e, _f = _a.reconnect, reconnect = _f === void 0 ? false : _f, _g = _a.reconnectionAttempts, reconnectionAttempts = _g === void 0 ? Infinity : _g, _h = _a.lazy, lazy = _h === void 0 ? false : _h, _j = _a.inactivityTimeout, inactivityTimeout = _j === void 0 ? 0 : _j, _k = _a.wsOptionArguments, wsOptionArguments = _k === void 0 ? [] : _k, _l = _a.serverSendsKeepalive, serverSendsKeepalive = _l === void 0 ? false : _l;
         this.wsImpl = webSocketImpl || NativeWebSocket;
         if (!this.wsImpl) {
-            throw new Error('Unable to find native implementation, or alternative implementation for WebSocket!');
+            throw new Error("Unable to find native implementation, or alternative implementation for WebSocket!");
         }
         this.wsProtocols = webSocketProtocols || protocol_1.GRAPHQL_WS;
         this.dataLoadImpl = dataLoadImpl || JSON.parse;
@@ -134,7 +138,7 @@ var SubscriptionClient = (function () {
             this.client.onerror = null;
             this.client.onmessage = null;
             this.client = null;
-            this.eventEmitter.emit('disconnected', closeCode);
+            this.eventEmitter.emit("disconnected", closeCode);
             if (!isForced) {
                 this.tryReconnect();
             }
@@ -182,31 +186,28 @@ var SubscriptionClient = (function () {
             _a;
     };
     SubscriptionClient.prototype.on = function (eventName, callback, context) {
-        console.log("asdasdasdasd")
         var handler = this.eventEmitter.on(eventName, callback, context);
         return function () {
-            console.log("asdasdasdasd")
             handler.off(eventName, callback, context);
         };
     };
     SubscriptionClient.prototype.onConnected = function (callback, context) {
-        return this.on('connected', callback, context);
+        return this.on("connected", callback, context);
     };
     SubscriptionClient.prototype.onConnecting = function (callback, context) {
-        console.log("asdasdasdasd")
-        return this.on('connecting', callback, context);
+        return this.on("connecting", callback, context);
     };
     SubscriptionClient.prototype.onDisconnected = function (callback, context) {
-        return this.on('disconnected', callback, context);
+        return this.on("disconnected", callback, context);
     };
     SubscriptionClient.prototype.onReconnected = function (callback, context) {
-        return this.on('reconnected', callback, context);
+        return this.on("reconnected", callback, context);
     };
     SubscriptionClient.prototype.onReconnecting = function (callback, context) {
-        return this.on('reconnecting', callback, context);
+        return this.on("reconnecting", callback, context);
     };
     SubscriptionClient.prototype.onError = function (callback, context) {
-        return this.on('error', callback, context);
+        return this.on("error", callback, context);
     };
     SubscriptionClient.prototype.unsubscribeAll = function () {
         var _this = this;
@@ -242,11 +243,11 @@ var SubscriptionClient = (function () {
     SubscriptionClient.prototype.use = function (middlewares) {
         var _this = this;
         middlewares.map(function (middleware) {
-            if (typeof middleware.applyMiddleware === 'function') {
+            if (typeof middleware.applyMiddleware === "function") {
                 _this.middlewares.push(middleware);
             }
             else {
-                throw new Error('Middleware must implement the applyMiddleware function.');
+                throw new Error("Middleware must implement the applyMiddleware function.");
             }
         });
         return this;
@@ -261,10 +262,12 @@ var SubscriptionClient = (function () {
         catch (e) {
             throw new Error("Message must be parseable. Got: " + receivedData + " " + e);
         }
-        if ([message_types_1.default.GQL_DATA,
+        if ([
+            message_types_1.default.GQL_DATA,
             message_types_1.default.GQL_COMPLETE,
             message_types_1.default.GQL_ERROR,
-        ].indexOf(parsedMessage.type) !== -1 && !this.operations[opId]) {
+        ].indexOf(parsedMessage.type) !== -1 &&
+            !this.operations[opId]) {
             this.unsubscribe(opId);
             return;
         }
@@ -278,7 +281,7 @@ var SubscriptionClient = (function () {
                 }
                 break;
             case message_types_1.default.GQL_CONNECTION_ACK:
-                this.eventEmitter.emit(this.reconnecting ? 'reconnected' : 'connected', parsedMessage.payload);
+                this.eventEmitter.emit(this.reconnecting ? "reconnected" : "connected", parsedMessage.payload);
                 this.reconnecting = false;
                 this.backoff.reset();
                 this.maxConnectTimeGenerator.reset();
@@ -296,8 +299,9 @@ var SubscriptionClient = (function () {
                 delete this.operations[opId];
                 break;
             case message_types_1.default.GQL_DATA:
-                var parsedPayload = !parsedMessage.payload.errors ?
-                    parsedMessage.payload : __assign(__assign({}, parsedMessage.payload), { errors: this.formatErrors(parsedMessage.payload.errors) });
+                var parsedPayload = !parsedMessage.payload.errors
+                    ? parsedMessage.payload
+                    : __assign(__assign({}, parsedMessage.payload), { errors: this.formatErrors(parsedMessage.payload.errors) });
                 this.operations[opId].handler(null, parsedPayload);
                 break;
             case message_types_1.default.GQL_CONNECTION_KEEP_ALIVE:
@@ -306,11 +310,11 @@ var SubscriptionClient = (function () {
                 }
                 break;
             default:
-                throw new Error('Invalid message type!');
+                throw new Error("Invalid message type!");
         }
     };
     SubscriptionClient.prototype.handleKeepalive = function () {
-        var firstKA = typeof this.wasKeepAliveReceived === 'undefined';
+        var firstKA = typeof this.wasKeepAliveReceived === "undefined";
         this.wasKeepAliveReceived = true;
         if (firstKA) {
             this.checkConnection();
@@ -323,17 +327,19 @@ var SubscriptionClient = (function () {
         return firstKA;
     };
     SubscriptionClient.prototype.getConnectionParams = function (connectionParams) {
-        return function () { return new Promise(function (resolve, reject) {
-            if (typeof connectionParams === 'function') {
-                try {
-                    return resolve(connectionParams.call(null));
+        return function () {
+            return new Promise(function (resolve, reject) {
+                if (typeof connectionParams === "function") {
+                    try {
+                        return resolve(connectionParams.call(null));
+                    }
+                    catch (error) {
+                        return reject(error);
+                    }
                 }
-                catch (error) {
-                    return reject(error);
-                }
-            }
-            resolve(connectionParams);
-        }); };
+                resolve(connectionParams);
+            });
+        };
     };
     SubscriptionClient.prototype.executeOperation = function (options, handler) {
         var _this = this;
@@ -357,7 +363,7 @@ var SubscriptionClient = (function () {
         return opId;
     };
     SubscriptionClient.prototype.getObserver = function (observerOrNext, error, complete) {
-        if (typeof observerOrNext === 'function') {
+        if (typeof observerOrNext === "function") {
             return {
                 next: function (v) { return observerOrNext(v); },
                 error: function (e) { return error && error(e); },
@@ -401,7 +407,8 @@ var SubscriptionClient = (function () {
     };
     SubscriptionClient.prototype.setInactivityTimeout = function () {
         var _this = this;
-        if (this.inactivityTimeout > 0 && Object.keys(this.operations).length === 0) {
+        if (this.inactivityTimeout > 0 &&
+            Object.keys(this.operations).length === 0) {
             this.inactivityTimeoutId = setTimeout(function () {
                 if (Object.keys(_this.operations).length === 0) {
                     _this.close();
@@ -412,21 +419,23 @@ var SubscriptionClient = (function () {
     SubscriptionClient.prototype.checkOperationOptions = function (options, handler) {
         var query = options.query, variables = options.variables, operationName = options.operationName;
         if (!query) {
-            throw new Error('Must provide a query.');
+            throw new Error("Must provide a query.");
         }
         if (!handler) {
-            throw new Error('Must provide an handler.');
+            throw new Error("Must provide an handler.");
         }
         if ((!is_string_1.default(query) && !getOperationAST_1.getOperationAST(query, operationName)) ||
             (operationName && !is_string_1.default(operationName)) ||
             (variables && !is_object_1.default(variables))) {
-            throw new Error('Incorrect option types. query must be a string or a document,' +
-                '`operationName` must be a string, and `variables` must be an object.');
+            throw new Error("Incorrect option types. query must be a string or a document," +
+                "`operationName` must be a string, and `variables` must be an object.");
         }
     };
     SubscriptionClient.prototype.buildMessage = function (id, type, payload) {
-        var payloadToReturn = payload && payload.query ? __assign(__assign({}, payload), { query: typeof payload.query === 'string' ? payload.query : printer_1.print(payload.query) }) :
-            payload;
+        var payloadToReturn = payload && payload.query
+            ? __assign(__assign({}, payload), { query: typeof payload.query === "string"
+                    ? payload.query
+                    : printer_1.print(payload.query) }) : payload;
         return {
             id: id,
             type: type,
@@ -443,11 +452,13 @@ var SubscriptionClient = (function () {
         if (errors && errors.message) {
             return [errors];
         }
-        return [{
-                name: 'FormatedError',
-                message: 'Unknown error',
+        return [
+            {
+                name: "FormatedError",
+                message: "Unknown error",
                 originalError: errors,
-            }];
+            },
+        ];
     };
     SubscriptionClient.prototype.sendMessage = function (id, type, payload) {
         this.sendMessageRaw(this.buildMessage(id, type, payload));
@@ -460,7 +471,7 @@ var SubscriptionClient = (function () {
                     this.dataLoadImpl(serializedMessage);
                 }
                 catch (e) {
-                    this.eventEmitter.emit('error', new Error("Message must be serializable. Got: " + message));
+                    this.eventEmitter.emit("error", new Error("Message must be serializable. Got: " + message));
                 }
                 this.client.send(serializedMessage);
                 break;
@@ -469,8 +480,9 @@ var SubscriptionClient = (function () {
                 break;
             default:
                 if (!this.reconnecting) {
-                    this.eventEmitter.emit('error', new Error('A message was not sent because socket is not connected, is closing or ' +
-                        'is already closed. Message was: ' + JSON.stringify(message)));
+                    this.eventEmitter.emit("error", new Error("A message was not sent because socket is not connected, is closing or " +
+                        "is already closed. Message was: " +
+                        JSON.stringify(message)));
                 }
         }
     };
@@ -523,7 +535,8 @@ var SubscriptionClient = (function () {
     SubscriptionClient.prototype.connect = function () {
         var _a;
         var _this = this;
-        this.client = new ((_a = this.wsImpl).bind.apply(_a, __spreadArrays([void 0, this.url, this.wsProtocols], this.wsOptionArguments)))();
+        this.client = new ((_a = this.wsImpl).bind.apply(_a, __spreadArrays([void 0, this.url,
+            this.wsProtocols], this.wsOptionArguments)))();
         this.checkMaxConnectTimeout();
         this.client.onopen = function () { return __awaiter(_this, void 0, void 0, function () {
             var connectionParams, error_1;
@@ -533,7 +546,7 @@ var SubscriptionClient = (function () {
                         if (!(this.status === this.wsImpl.OPEN)) return [3, 4];
                         this.clearMaxConnectTimeout();
                         this.closedByUser = false;
-                        this.eventEmitter.emit(this.reconnecting ? 'reconnecting' : 'connecting');
+                        this.eventEmitter.emit(this.reconnecting ? "reconnecting" : "connecting");
                         _a.label = 1;
                     case 1:
                         _a.trys.push([1, 3, , 4]);
@@ -554,16 +567,16 @@ var SubscriptionClient = (function () {
         }); };
         this.client.onclose = function (event) {
             if (!_this.closedByUser) {
-                var code = event ? (event.code || null) : null;
+                var code = event ? event.code || null : null;
                 _this.close(false, false, code);
             }
         };
         this.client.onerror = function (err) {
-            _this.eventEmitter.emit('error', err);
+            _this.eventEmitter.emit("error", err);
         };
         this.client.onmessage = function (_a) {
             var data = _a.data;
-            if (typeof data === 'string') {
+            if (typeof data === "string") {
                 _this.dataReceiver = _this.dataReceiver
                     .catch(function () { return null; })
                     .then(function () { return _this.processReceivedData(data); });
@@ -572,7 +585,9 @@ var SubscriptionClient = (function () {
                 _this.dataReceiver = _this.dataReceiver
                     .catch(function () { return null; })
                     .then(function () { return data.arrayBuffer(); })
-                    .then(function (buffer) { return _this.processReceivedData(new Uint8Array(buffer)); });
+                    .then(function (buffer) {
+                    return _this.processReceivedData(new Uint8Array(buffer));
+                });
             }
         };
     };
