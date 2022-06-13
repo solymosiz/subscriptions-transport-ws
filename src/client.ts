@@ -277,12 +277,12 @@ export class SubscriptionClient {
 
   public onConnected(callback: ListenerFn, context?: any): Function {
     console.log("on asdasd");
-    return this.on("connected", callback, context);
+    return this.on("connected", callback, "asd");
   }
 
   public onConnecting(callback: ListenerFn, context?: any): Function {
     console.log("on asdasd");
-    return this.on("connecting", callback, context);
+    return this.on("connecting", callback, "wasdsd");
   }
 
   public onDisconnected(callback: ListenerFn, context?: any): Function {

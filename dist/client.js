@@ -195,11 +195,11 @@ var SubscriptionClient = (function () {
     };
     SubscriptionClient.prototype.onConnected = function (callback, context) {
         console.log("on asdasd");
-        return this.on("connected", callback, context);
+        return this.on("connected", callback, "asd");
     };
     SubscriptionClient.prototype.onConnecting = function (callback, context) {
         console.log("on asdasd");
-        return this.on("connecting", callback, context);
+        return this.on("connecting", callback, "wasdsd");
     };
     SubscriptionClient.prototype.onDisconnected = function (callback, context) {
         return this.on("disconnected", callback, context);
