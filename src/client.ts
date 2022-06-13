@@ -125,6 +125,7 @@ export class SubscriptionClient {
     dataDumpImpl?: any
   ) {
     console.log("ts asdasdasd");
+    throw new Error("wasdwasd!");
     const {
       connectionCallback = undefined,
       connectionParams = {},
