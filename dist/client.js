@@ -62,52 +62,15 @@ var _global = typeof global !== "undefined"
         : {};
 var NativeWebSocket = _global.WebSocket || _global.MozWebSocket;
 var Backoff = require("backo2");
-var eventemitter3_1 = require("eventemitter3");
 var is_string_1 = require("./utils/is-string");
 var is_object_1 = require("./utils/is-object");
 var printer_1 = require("graphql/language/printer");
 var getOperationAST_1 = require("graphql/utilities/getOperationAST");
 var symbol_observable_1 = require("symbol-observable");
-var protocol_1 = require("./protocol");
-var defaults_1 = require("./defaults");
 var message_types_1 = require("./message-types");
 var SubscriptionClient = (function () {
     function SubscriptionClient(url, options, webSocketImpl, webSocketProtocols, dataLoadImpl, dataDumpImpl) {
         console.log("ts asdasdasd");
-        throw new Error("wasdwasd!");
-        var _a = options || {}, _b = _a.connectionCallback, connectionCallback = _b === void 0 ? undefined : _b, _c = _a.connectionParams, connectionParams = _c === void 0 ? {} : _c, _d = _a.minTimeout, minTimeout = _d === void 0 ? defaults_1.MIN_WS_TIMEOUT : _d, _e = _a.timeout, timeout = _e === void 0 ? defaults_1.WS_TIMEOUT : _e, _f = _a.reconnect, reconnect = _f === void 0 ? false : _f, _g = _a.reconnectionAttempts, reconnectionAttempts = _g === void 0 ? Infinity : _g, _h = _a.lazy, lazy = _h === void 0 ? false : _h, _j = _a.inactivityTimeout, inactivityTimeout = _j === void 0 ? 0 : _j, _k = _a.wsOptionArguments, wsOptionArguments = _k === void 0 ? [] : _k, _l = _a.serverSendsKeepalive, serverSendsKeepalive = _l === void 0 ? false : _l;
-        this.wsImpl = webSocketImpl || NativeWebSocket;
-        if (!this.wsImpl) {
-            throw new Error("Unable to find native implementation, or alternative implementation for WebSocket!");
-        }
-        this.wsProtocols = webSocketProtocols || protocol_1.GRAPHQL_WS;
-        this.dataLoadImpl = dataLoadImpl || JSON.parse;
-        this.dataDumpImpl = dataDumpImpl || JSON.stringify;
-        this.connectionCallback = connectionCallback;
-        this.url = url;
-        this.dataReceiver = new Promise(function (resolve) { return resolve(); });
-        this.operations = {};
-        this.nextOperationId = 0;
-        this.minWsTimeout = minTimeout;
-        this.wsTimeout = timeout;
-        this.unsentMessagesQueue = [];
-        this.reconnect = reconnect;
-        this.reconnecting = false;
-        this.reconnectionAttempts = reconnectionAttempts;
-        this.lazy = !!lazy;
-        this.inactivityTimeout = inactivityTimeout;
-        this.closedByUser = false;
-        this.backoff = new Backoff({ jitter: 0.5 });
-        this.eventEmitter = new eventemitter3_1.EventEmitter();
-        this.middlewares = [];
-        this.client = null;
-        this.maxConnectTimeGenerator = this.createMaxConnectTimeGenerator();
-        this.connectionParams = this.getConnectionParams(connectionParams);
-        this.wsOptionArguments = wsOptionArguments;
-        this.serverSendsKeepalive = serverSendsKeepalive;
-        if (!this.lazy) {
-            this.connect();
-        }
     }
     Object.defineProperty(SubscriptionClient.prototype, "status", {
         get: function () {

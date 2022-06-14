@@ -125,56 +125,6 @@ export class SubscriptionClient {
     dataDumpImpl?: any
   ) {
     console.log("ts asdasdasd");
-    throw new Error("wasdwasd!");
-    const {
-      connectionCallback = undefined,
-      connectionParams = {},
-      minTimeout = MIN_WS_TIMEOUT,
-      timeout = WS_TIMEOUT,
-      reconnect = false,
-      reconnectionAttempts = Infinity,
-      lazy = false,
-      inactivityTimeout = 0,
-      wsOptionArguments = [],
-      serverSendsKeepalive = false,
-    } = options || {};
-
-    this.wsImpl = webSocketImpl || NativeWebSocket;
-    if (!this.wsImpl) {
-      throw new Error(
-        "Unable to find native implementation, or alternative implementation for WebSocket!"
-      );
-    }
-
-    this.wsProtocols = webSocketProtocols || GRAPHQL_WS;
-    this.dataLoadImpl = dataLoadImpl || JSON.parse;
-    this.dataDumpImpl = dataDumpImpl || JSON.stringify;
-    this.connectionCallback = connectionCallback;
-    this.url = url;
-    this.dataReceiver = new Promise((resolve) => resolve());
-    this.operations = {};
-    this.nextOperationId = 0;
-    this.minWsTimeout = minTimeout;
-    this.wsTimeout = timeout;
-    this.unsentMessagesQueue = [];
-    this.reconnect = reconnect;
-    this.reconnecting = false;
-    this.reconnectionAttempts = reconnectionAttempts;
-    this.lazy = !!lazy;
-    this.inactivityTimeout = inactivityTimeout;
-    this.closedByUser = false;
-    this.backoff = new Backoff({ jitter: 0.5 });
-    this.eventEmitter = new EventEmitter();
-    this.middlewares = [];
-    this.client = null;
-    this.maxConnectTimeGenerator = this.createMaxConnectTimeGenerator();
-    this.connectionParams = this.getConnectionParams(connectionParams);
-    this.wsOptionArguments = wsOptionArguments;
-    this.serverSendsKeepalive = serverSendsKeepalive;
-
-    if (!this.lazy) {
-      this.connect();
-    }
   }
 
   public get status() {
